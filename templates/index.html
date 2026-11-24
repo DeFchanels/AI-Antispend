@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AntiSpend — Финансовый радар</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a30;
+      --panel-2: #192442;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --danger: #f87171;
+      --border: rgba(148, 163, 184, 0.16);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 85% 0%, #172554 0%, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .topbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .source-pill {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .sidebar, .card, .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .sidebar {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input[type="file"],
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input[type="file"] {
+      padding: 7px 9px;
+      font-size: 13px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.12s ease;
+    }
+
+    button:hover {
+      opacity: 0.94;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #061326;
+    }
+
+    .btn-secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+      min-height: 18px;
+      line-height: 1.4;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .kpi {
+      padding: 16px;
+    }
+
+    .kpi .k-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .kpi .k-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 8px;
+      line-height: 1.15;
+    }
+
+    .kpi .k-value.accent {
+      color: var(--green);
+    }
+
+    .kpi .k-value.income {
+      color: var(--green);
+    }
+
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+      width: 100%;
+    }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .chip {
+      background: var(--panel-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chip.active {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .finding-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .finding-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .finding-meta {
+      min-width: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.14);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 5px;
+    }
+
+    .merchant {
+      font-size: 15px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .reason {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    .amounts {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .spent-red {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .income-green {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .sub-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .sub-saving {
+      font-size: 12px;
+      color: var(--green);
+      margin-top: 2px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div>
+        <h1>AntiSpend</h1>
+        <p>Поиск регулярных списаний, мелкого шума, импульсивных трат и поступлений</p>
+      </div>
+      <div class="source-pill" id="sourceLabel">Файл не выбран</div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <h2 class="sidebar-title">Параметры и файл</h2>
+
+        <div class="field">
+          <label for="csvFile">CSV-выписка</label>
+          <input id="csvFile" type="file" accept=".csv,text/csv" />
+        </div>
+
+        <div class="field">
+          <label for="sep">Разделитель колонок</label>
+          <select id="sep">
+            <option value="," selected>Запятая (,)</option>
+            <option value=";">Точка с запятой (;)</option>
+            <option value="\t">Табуляция</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="minSubOcc">Минимум повторов для подписки</label>
+          <input id="minSubOcc" type="number" min="2" max="10" value="3" />
+        </div>
+
+        <div class="field">
+          <label for="maxSmallAmt">Потолок мелкой траты (₽)</label>
+          <input id="maxSmallAmt" type="number" min="50" step="50" value="350" />
+        </div>
+
+        <div class="field">
+          <label for="minSpikeAmt">Порог крупного платежа (₽)</label>
+          <input id="minSpikeAmt" type="number" min="500" step="500" value="3000" />
+        </div>
+
+        <div class="btn-stack">
+          <button class="btn-primary" id="btnAnalyze">Анализировать файл</button>
+          <button class="btn-secondary" id="btnDemo">Сгенерировать тест и проанализировать</button>
+        </div>
+
+        <div class="error" id="errorBox"></div>
+      </aside>
+
+      <main class="content">
+        <section class="kpis">
+          <div class="kpi">
+            <div class="k-label">Операций</div>
+            <div class="k-value" id="kpiTx">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k-label">Поступления</div>
+            <div class="k-value income" id="kpiIncome">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k-label">Экономия</div>
+            <div class="k-value accent" id="kpiSaving">—</div>
+          </div>
+          <div class="kpi">
+            <div class="k-label">Доля от трат</div>
+            <div class="k-value" id="kpiShare">—</div>
+          </div>
+        </section>
+
+        <section class="charts-row">
+          <div class="card">
+            <div class="card-head">
+              <h2>Экономия по категориям</h2>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="savingChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Траты по категориям</h2>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="spentChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Найденные траты и поступления</h2>
+          </div>
+          <div class="chips" id="chips">
+            <span class="chip active" data-cat="all">Все</span>
+            <span class="chip" data-cat="subscription">Подписки</span>
+            <span class="chip" data-cat="frequent_small">Мелочи</span>
+            <span class="chip" data-cat="impulse_burst">Серии за день</span>
+            <span class="chip" data-cat="impulse_spike">Крупный чек</span>
+            <span class="chip" data-cat="income">Получение</span>
+          </div>
+          <div id="findingsList">
+            <div class="empty">Загрузите CSV слева или нажмите кнопку генерации тестовых данных.</div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const CAT_LABELS = {
+      subscription: "Подписка",
+      frequent_small: "Частые мелочи",
+      impulse_burst: "Серия за день",
+      impulse_spike: "Крупный всплеск",
+      income: "Получение",
+    };
+
+    let allFindings = [];
+    let activeCat = "all";
+    let savingChartInstance = null;
+    let spentChartInstance = null;
+
+    function formatRub(val) {
+      return `${Number(val || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
+    }
+
+    function appendCommonParams(fd) {
+      fd.append("sep", document.getElementById("sep").value);
+      fd.append("min_sub_occ", document.getElementById("minSubOcc").value);
+      fd.append("max_small_amt", document.getElementById("maxSmallAmt").value);
+      fd.append("min_spike_amt", document.getElementById("minSpikeAmt").value);
+    }
+
+    function buildBarChart(canvasId, prevInstance, byCategory, labelText, color) {
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      const labels = Object.keys(byCategory).map((k) => CAT_LABELS[k] || k);
+      const values = Object.values(byCategory);
+
+      if (prevInstance) {
+        prevInstance.destroy();
+      }
+
+      return new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: labelText,
+            data: values,
+            backgroundColor: color,
+            borderRadius: 6,
+            maxBarThickness: 48,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            x: {
+              ticks: { color: "#94a3b8", font: { size: 11 } },
+              grid: { display: false },
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#94a3b8", font: { size: 11 } },
+              grid: { color: "rgba(148, 163, 184, 0.12)" },
+            },
+          },
+        },
+      });
+    }
+
+    function renderCharts(bySaving, bySpent) {
+      savingChartInstance = buildBarChart(
+        "savingChart",
+        savingChartInstance,
+        bySaving,
+        "Экономия (₽)",
+        "#38bdf8"
+      );
+      spentChartInstance = buildBarChart(
+        "spentChart",
+        spentChartInstance,
+        bySpent,
+        "Траты (₽)",
+        "#f87171"
+      );
+    }
+
+    function renderFindings() {
+      const container = document.getElementById("findingsList");
+      const rows = activeCat === "all"
+        ? allFindings
+        : allFindings.filter((item) => item.category === activeCat);
+
+      if (!rows.length) {
+        container.innerHTML = `<div class="empty">Для выбранного фильтра записей нет.</div>`;
+        return;
+      }
+
+      container.innerHTML = rows.map((item) => {
+        const isIncome = item.category === "income";
+        let amountBlock;
+
+        if (isIncome) {
+          amountBlock = `
+            <div class="income-green">+${formatRub(item.total_spent)}</div>
+            <div class="sub-note">получение</div>
+          `;
+        } else if (item.estimated_saving > 0) {
+          amountBlock = `
+            <div class="spent-red">потрачено: ${formatRub(item.total_spent)}</div>
+            <div class="sub-saving">экономия: +${formatRub(item.estimated_saving)}</div>
+          `;
+        } else {
+          amountBlock = `
+            <div class="spent-red">потрачено: ${formatRub(item.total_spent)}</div>
+            <div class="sub-note">на проверку</div>
+          `;
+        }
+
+        return `
+          <div class="finding-row">
+            <div class="finding-meta">
+              <span class="badge">${CAT_LABELS[item.category] || item.category} · ${item.occurrences}×</span>
+              <div class="merchant">${item.merchant}</div>
+              <div class="reason">${item.reason}</div>
+            </div>
+            <div class="amounts">${amountBlock}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderReport(data) {
+      document.getElementById("errorBox").textContent = "";
+      document.getElementById("sourceLabel").textContent = `Файл: ${data.source}`;
+      document.getElementById("kpiTx").textContent = data.tx_count;
+      document.getElementById("kpiIncome").textContent = formatRub(data.total_income);
+      document.getElementById("kpiSaving").textContent = formatRub(data.total_saving);
+      document.getElementById("kpiShare").textContent = `${data.saving_share}%`;
+
+      allFindings = data.findings || [];
+      renderCharts(data.by_category || {}, data.expenses_by_category || {});
+      renderFindings();
+    }
+
+    async function postForm(url, fd) {
+      try {
+        const res = await fetch(url, { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          document.getElementById("errorBox").textContent = data.error || "Ошибка при анализе.";
+          return;
+        }
+        renderReport(data);
+      } catch (err) {
+        document.getElementById("errorBox").textContent = `Сбой запроса: ${err.message}`;
+      }
+    }
+
+    document.getElementById("btnAnalyze").addEventListener("click", () => {
+      const fileInput = document.getElementById("csvFile");
+      if (!fileInput.files.length) {
+        document.getElementById("errorBox").textContent = "Выберите CSV-файл перед запуском.";
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", fileInput.files[0]);
+      appendCommonParams(fd);
+      postForm("/api/analyze", fd);
+    });
+
+    document.getElementById("btnDemo").addEventListener("click", () => {
+      const fd = new FormData();
+      appendCommonParams(fd);
+      postForm("/api/demo", fd);
+    });
+
+    document.getElementById("chips").addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeCat = chip.dataset.cat;
+      renderFindings();
+    });
+  </script>
+</body>
+</html>
