@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>AntiSpend — Финансовый радар</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -19,51 +19,74 @@
       --radius: 14px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
 
     body {
       margin: 0;
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: radial-gradient(circle at 85% 0%, #172554 0%, var(--bg) 52%);
       color: var(--text);
-      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
     }
 
     .page {
-      max-width: 1240px;
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 28px 20px 56px;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(14px, env(safe-area-inset-right))
+        max(40px, env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 12px 16px;
       flex-wrap: wrap;
-      margin-bottom: 22px;
+      margin-bottom: 18px;
+    }
+
+    .topbar > div:first-child {
+      min-width: 0;
+      flex: 1 1 260px;
     }
 
     .topbar h1 {
       margin: 0;
-      font-size: 26px;
+      font-size: clamp(22px, 3vw, 28px);
       font-weight: 700;
       letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
     .topbar p {
-      margin: 4px 0 0;
+      margin: 5px 0 0;
       color: var(--muted);
-      font-size: 14px;
+      font-size: clamp(13px, 1.6vw, 14px);
+      line-height: 1.4;
     }
 
     .source-pill {
       background: var(--panel);
       border: 1px solid var(--border);
       color: var(--muted);
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12.5px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .layout {
@@ -73,21 +96,18 @@
       align-items: start;
     }
 
-    @media (max-width: 960px) {
-      .layout { grid-template-columns: 1fr; }
-    }
-
     .sidebar, .card, .kpi {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      min-width: 0;
     }
 
     .sidebar {
-      padding: 18px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 13px;
     }
 
     .sidebar-title {
@@ -96,10 +116,17 @@
       margin: 0;
     }
 
+    .params-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
     .field {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .field label {
@@ -107,25 +134,60 @@
       color: var(--muted);
     }
 
-    input[type="file"],
-    input[type="number"],
-    select {
+    .file-input-hidden {
+      display: none;
+    }
+
+    .file-picker {
       width: 100%;
+      min-height: 42px;
       background: var(--panel-2);
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 9px 11px;
+      padding: 10px 12px;
       font-size: 14px;
-      outline: none;
+      line-height: 1.3;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      overflow: hidden;
+      touch-action: manipulation;
     }
 
-    input[type="file"] {
-      padding: 7px 9px;
+    .file-picker-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+      font-size: 13.5px;
+    }
+
+    .file-picker-action {
+      color: var(--accent);
       font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
     }
 
-    input:focus, select:focus {
+    input[type="number"],
+    select {
+      width: 100%;
+      max-width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+      outline: none;
+      touch-action: manipulation;
+    }
+
+    input:focus, select:focus, .file-picker:focus-within {
       border-color: var(--accent);
     }
 
@@ -133,23 +195,31 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     button {
       width: 100%;
+      min-height: 44px;
       border: 0;
       border-radius: 10px;
-      padding: 10px 14px;
+      padding: 11px 14px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      touch-action: manipulation;
       transition: opacity 0.15s ease, transform 0.12s ease;
     }
 
-    button:hover {
-      opacity: 0.94;
-      transform: translateY(-1px);
+    button:active {
+      transform: scale(0.99);
+    }
+
+    @media (hover: hover) {
+      button:hover {
+        opacity: 0.94;
+        transform: translateY(-1px);
+      }
     }
 
     .btn-primary {
@@ -163,11 +233,24 @@
       border: 1px solid var(--border);
     }
 
+    .btn-mini {
+      width: auto;
+      min-height: 32px;
+      padding: 5px 11px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
     .error {
       color: var(--danger);
       font-size: 13px;
       min-height: 18px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .content {
@@ -183,30 +266,24 @@
       gap: 12px;
     }
 
-    @media (max-width: 720px) {
-      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
     .kpi {
-      padding: 16px;
+      padding: 15px 16px;
     }
 
     .kpi .k-label {
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--muted);
     }
 
     .kpi .k-value {
-      font-size: 24px;
+      font-size: clamp(20px, 2.2vw, 24px);
       font-weight: 700;
-      margin-top: 8px;
-      line-height: 1.15;
+      margin-top: 6px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
     }
 
-    .kpi .k-value.accent {
-      color: var(--green);
-    }
-
+    .kpi .k-value.accent,
     .kpi .k-value.income {
       color: var(--green);
     }
@@ -217,12 +294,8 @@
       gap: 16px;
     }
 
-    @media (max-width: 900px) {
-      .charts-row { grid-template-columns: 1fr; }
-    }
-
     .card {
-      padding: 18px;
+      padding: 16px;
     }
 
     .card-head {
@@ -231,7 +304,7 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .card h2 {
@@ -242,13 +315,14 @@
 
     .chart-wrap {
       position: relative;
-      height: 240px;
+      height: 235px;
       width: 100%;
+      min-width: 0;
     }
 
     .chips {
       display: flex;
-      gap: 6px;
+      gap: 7px;
       flex-wrap: wrap;
       margin-bottom: 12px;
     }
@@ -258,10 +332,12 @@
       color: var(--muted);
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 5px 11px;
-      font-size: 12px;
+      padding: 7px 12px;
+      font-size: 12.5px;
+      line-height: 1.2;
       cursor: pointer;
       user-select: none;
+      touch-action: manipulation;
     }
 
     .chip.active {
@@ -270,12 +346,18 @@
       border-color: var(--accent);
     }
 
+    .findings-scroll {
+      max-height: 540px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
     .finding-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 16px;
-      padding: 12px 0;
+      gap: 12px 16px;
+      padding: 13px 0;
       border-bottom: 1px solid var(--border);
     }
 
@@ -286,6 +368,7 @@
 
     .finding-meta {
       min-width: 0;
+      flex: 1 1 auto;
     }
 
     .badge {
@@ -294,7 +377,7 @@
       font-weight: 600;
       color: var(--accent);
       background: rgba(56, 189, 248, 0.14);
-      padding: 2px 8px;
+      padding: 3px 8px;
       border-radius: 999px;
       margin-bottom: 5px;
     }
@@ -302,14 +385,15 @@
     .merchant {
       font-size: 15px;
       font-weight: 600;
-      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .reason {
       font-size: 13px;
       color: var(--muted);
-      margin-top: 3px;
-      line-height: 1.4;
+      margin-top: 4px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
     }
 
     .amounts {
@@ -330,21 +414,83 @@
     }
 
     .sub-note {
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--muted);
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .sub-saving {
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--green);
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .empty {
       color: var(--muted);
       font-size: 14px;
-      padding: 16px 0;
+      padding: 14px 0;
+    }
+
+    @media (max-width: 900px) {
+      .layout,
+      .params-grid,
+      .kpis,
+      .charts-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .page {
+        padding:
+          max(14px, env(safe-area-inset-top))
+          max(12px, env(safe-area-inset-right))
+          max(32px, env(safe-area-inset-bottom))
+          max(12px, env(safe-area-inset-left));
+      }
+
+      .btn-stack {
+        flex-direction: column;
+      }
+
+      .kpi {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 15px;
+      }
+
+      .kpi .k-label {
+        font-size: 13.5px;
+      }
+
+      .kpi .k-value {
+        margin-top: 0;
+        font-size: 20px;
+        text-align: right;
+      }
+
+      .chart-wrap {
+        height: 230px;
+      }
+
+      .findings-scroll {
+        max-height: 440px;
+      }
+
+      .finding-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .amounts {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding-top: 2px;
+      }
     }
   </style>
 </head>
@@ -362,33 +508,39 @@
       <aside class="sidebar">
         <h2 class="sidebar-title">Параметры и файл</h2>
 
-        <div class="field">
-          <label for="csvFile">CSV-выписка</label>
-          <input id="csvFile" type="file" accept=".csv,text/csv" />
-        </div>
+        <div class="params-grid">
+          <div class="field">
+            <label for="csvFile">CSV-выписка</label>
+            <input id="csvFile" class="file-input-hidden" type="file" accept=".csv,text/csv" />
+            <label for="csvFile" class="file-picker" id="filePickerLabel">
+              <span class="file-picker-name" id="filePickerName">Файл не выбран</span>
+              <span class="file-picker-action">Выбрать файл</span>
+            </label>
+          </div>
 
-        <div class="field">
-          <label for="sep">Разделитель колонок</label>
-          <select id="sep">
-            <option value="," selected>Запятая (,)</option>
-            <option value=";">Точка с запятой (;)</option>
-            <option value="\t">Табуляция</option>
-          </select>
-        </div>
+          <div class="field">
+            <label for="sep">Разделитель колонок</label>
+            <select id="sep">
+              <option value="," selected>Запятая (,)</option>
+              <option value=";">Точка с запятой (;)</option>
+              <option value="\t">Табуляция</option>
+            </select>
+          </div>
 
-        <div class="field">
-          <label for="minSubOcc">Минимум повторов для подписки</label>
-          <input id="minSubOcc" type="number" min="2" max="10" value="3" />
-        </div>
+          <div class="field">
+            <label for="minSubOcc">Минимум повторов для подписки</label>
+            <input id="minSubOcc" type="number" min="2" max="10" value="3" />
+          </div>
 
-        <div class="field">
-          <label for="maxSmallAmt">Потолок мелкой траты (₽)</label>
-          <input id="maxSmallAmt" type="number" min="50" step="50" value="350" />
-        </div>
+          <div class="field">
+            <label for="maxSmallAmt">Потолок мелкой траты (₽)</label>
+            <input id="maxSmallAmt" type="number" min="50" step="50" value="350" />
+          </div>
 
-        <div class="field">
-          <label for="minSpikeAmt">Порог крупного платежа (₽)</label>
-          <input id="minSpikeAmt" type="number" min="500" step="500" value="3000" />
+          <div class="field">
+            <label for="minSpikeAmt">Порог крупного платежа (₽)</label>
+            <input id="minSpikeAmt" type="number" min="500" step="500" value="3000" />
+          </div>
         </div>
 
         <div class="btn-stack">
@@ -443,6 +595,7 @@
           <div class="card-head">
             <h2>Найденные траты и поступления</h2>
           </div>
+
           <div class="chips" id="chips">
             <span class="chip active" data-cat="all">Все</span>
             <span class="chip" data-cat="subscription">Подписки</span>
@@ -451,8 +604,11 @@
             <span class="chip" data-cat="impulse_spike">Крупный чек</span>
             <span class="chip" data-cat="income">Получение</span>
           </div>
-          <div id="findingsList">
-            <div class="empty">Загрузите CSV слева или нажмите кнопку генерации тестовых данных.</div>
+
+          <div class="findings-scroll" id="findingsScroll">
+            <div id="findingsList">
+              <div class="empty">Загрузите CSV или нажмите кнопку генерации тестовых данных.</div>
+            </div>
           </div>
         </section>
       </main>
@@ -472,6 +628,7 @@
     let activeCat = "all";
     let savingChartInstance = null;
     let spentChartInstance = null;
+    let lastReportData = null;
 
     function formatRub(val) {
       return `${Number(val || 0).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
@@ -486,6 +643,7 @@
 
     function buildBarChart(canvasId, prevInstance, byCategory, labelText, color) {
       const ctx = document.getElementById(canvasId).getContext("2d");
+      const isNarrow = window.innerWidth <= 900;
       const labels = Object.keys(byCategory).map((k) => CAT_LABELS[k] || k);
       const values = Object.values(byCategory);
 
@@ -502,7 +660,7 @@
             data: values,
             backgroundColor: color,
             borderRadius: 6,
-            maxBarThickness: 48,
+            maxBarThickness: isNarrow ? 34 : 48,
           }],
         },
         options: {
@@ -513,12 +671,20 @@
           },
           scales: {
             x: {
-              ticks: { color: "#94a3b8", font: { size: 11 } },
+              ticks: {
+                color: "#94a3b8",
+                font: { size: isNarrow ? 10 : 11 },
+                maxRotation: isNarrow ? 25 : 0,
+                autoSkip: false,
+              },
               grid: { display: false },
             },
             y: {
               beginAtZero: true,
-              ticks: { color: "#94a3b8", font: { size: 11 } },
+              ticks: {
+                color: "#94a3b8",
+                font: { size: isNarrow ? 10 : 11 },
+              },
               grid: { color: "rgba(148, 163, 184, 0.12)" },
             },
           },
@@ -545,16 +711,17 @@
 
     function renderFindings() {
       const container = document.getElementById("findingsList");
-      const rows = activeCat === "all"
+
+      const filtered = activeCat === "all"
         ? allFindings
         : allFindings.filter((item) => item.category === activeCat);
 
-      if (!rows.length) {
+      if (!filtered.length) {
         container.innerHTML = `<div class="empty">Для выбранного фильтра записей нет.</div>`;
         return;
       }
 
-      container.innerHTML = rows.map((item) => {
+      container.innerHTML = filtered.map((item) => {
         const isIncome = item.category === "income";
         let amountBlock;
 
@@ -589,6 +756,7 @@
     }
 
     function renderReport(data) {
+      lastReportData = data;
       document.getElementById("errorBox").textContent = "";
       document.getElementById("sourceLabel").textContent = `Файл: ${data.source}`;
       document.getElementById("kpiTx").textContent = data.tx_count;
@@ -615,6 +783,12 @@
       }
     }
 
+    document.getElementById("csvFile").addEventListener("change", (e) => {
+      const nameEl = document.getElementById("filePickerName");
+      const file = e.target.files && e.target.files[0];
+      nameEl.textContent = file ? file.name : "Файл не выбран";
+    });
+
     document.getElementById("btnAnalyze").addEventListener("click", () => {
       const fileInput = document.getElementById("csvFile");
       if (!fileInput.files.length) {
@@ -640,6 +814,18 @@
       chip.classList.add("active");
       activeCat = chip.dataset.cat;
       renderFindings();
+    });
+
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      if (!lastReportData) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        renderCharts(
+          lastReportData.by_category || {},
+          lastReportData.expenses_by_category || {}
+        );
+      }, 150);
     });
   </script>
 </body>
